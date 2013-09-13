@@ -10,6 +10,7 @@ setup = (options, imports, register) ->
 
   register null,
     "line-snapshot":
+
       setup: (path) ->
         snapshotDir = path
         if fs.existsSync(path)
@@ -19,16 +20,12 @@ setup = (options, imports, register) ->
 
           if data.length == 0
             spew.warning "No data in snapshot, continuing"
-          else
-            snapshot = JSON.parse data
-      getData: (name) ->
-        snapshot[name]
-      addData: (name, d) ->
-        snapshot[name] = d
+          else snapshot = JSON.parse data
+      getData: (name) -> snapshot[name]
+      addData: (name, d) -> snapshot[name] = d
       save: ->
         if snapshotDir.length > 0
           fs.writeFileSync snapshotDir, JSON.stringify(snapshot)
-        else
-          spew.warning "No snapshot path provided"
+        else spew.warning "No snapshot path provided"
 
 module.exports = setup

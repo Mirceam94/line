@@ -9,7 +9,6 @@ setup = (options, imports, register) ->
   connectedDB = ""
 
   register null,
-
     "line-mongodb":
 
       # Sets up DB models for this instance
@@ -17,16 +16,17 @@ setup = (options, imports, register) ->
       # Args:
       #  index    - Path to module exporting models
       setupModels: (index) ->
-        if connectedDB == ""
-          objects = require index
-
-          for key of objects
-            objects[key].createSchema()
-            objects[key].createModel()
-
-          spew.init "Database models loaded from " + index
-        else
+        if connectedDB != ""
           spew.warning "Database already set up!"
+          return
+
+        objects = require index
+
+        for key of objects
+          objects[key].createSchema()
+          objects[key].createModel()
+
+        spew.init "Database models loaded from " + index
 
       # Connect to Database
       #
@@ -40,13 +40,10 @@ setup = (options, imports, register) ->
       connect: (user, pass, host, port, db) ->
         if not connected and objects
 
-          con = ""
-          con += "mongodb://" + user + ":" + pass + "@" + host
-          con += ":" + port + "/" + db
+          con = "mongodb://#{user}:#{pass}@#{host}:#{port}/#{db}"
 
           mongoose.connect con, (err) ->
-            if err
-              spew.critical "Error connecting to database [" + err + "]"
+            if err then spew.critical "Error connecting to database [#{err}]"
             else
               spew.init "Connected to MongoDB database"
               connected = true
@@ -54,8 +51,7 @@ setup = (options, imports, register) ->
 
         else if objects
           spew.error "You need to setup your models before connecting!"
-        else
-          spew.warning "Already connected to db " + connectedDB + "!"
+        else spew.warning "Already connected to db #{connectedDB}!"
 
       # Returns DB objects
       #
@@ -79,7 +75,7 @@ setup = (options, imports, register) ->
           models = [ models ]
 
           # Reformat queries if necessary
-          if Object.prototype.toString.call queries != "[object Array]"
+          if Object.prototype.toString.call(queries) != "[object Array]"
             queries = [ queries ]
         else
 
@@ -97,11 +93,9 @@ setup = (options, imports, register) ->
               ret = {}
 
               if err
-                spew.error "DB Error: " + err
-                if errcb
-                  errcb err
-              else
-                ret = data
+                spew.error "DB Error: #{err}"
+                if errcb then errcb err
+              else ret = data
 
               # Emulates findOne()
               if ret

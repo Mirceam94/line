@@ -17,23 +17,23 @@ setup = (options, imports, register) ->
 
   register null,
     "line-userauth":
+
       checkAuth: (user) ->
         for aU in authUsers
-          if user.id == aU.id && user.sess == aU.sess
-            return true
-
+          if user.id == aU.id && user.sess == aU.sess then return true
         false
+
       authorize: (user) ->
         for aU in authUsers
-          if user.id == aU.id && user.sess == aU.sess
-            return
-
+          if user.id == aU.id && user.sess == aU.sess then return
         authUsers.push user
+
       deauthorize: (user) ->
         for aU, i in authUsers
           if user.id == aU.id && user.sess == aU.sess
             authUsers.splice i, 1
-      getUserList: ->
-        authUsers
+            return
+
+      getUserList: -> authUsers
 
 module.exports = setup

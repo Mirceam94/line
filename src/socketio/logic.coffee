@@ -15,8 +15,8 @@ setup = (options, imports, register) ->
   register null,
     "line-socketio":
 
-      io: ->
-        ioObject
+      io: -> ioObject
+
       # Set socket log level
       #
       # Args:
@@ -59,7 +59,7 @@ setup = (options, imports, register) ->
         ioObject.set "log level", this.logLevel
 
       addListener: (name, cb) ->
-        spew.info "Added socket listener [" + name + "]"
+        spew.info "Added socket listener [#{name}]"
         listeners.push
           "name": name
           "cb": cb
@@ -87,7 +87,7 @@ setup = (options, imports, register) ->
         for name in names
           sock.get name, (err, data) ->
             if err
-              spew.error "Failed to query socket [" + err + "]"
+              spew.error "Failed to query socket [#{err}]"
               if errcb then errcb err
             else
 

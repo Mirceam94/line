@@ -33,8 +33,7 @@ setup = (options, imports, register) ->
     port: 0
 
   lowRuleRegister = (rule) ->
-    app.use (req, res, next) ->
-      rule req, res, next
+    app.use (req, res, next) -> rule req, res, next
 
   register null,
     "line-express":
@@ -45,10 +44,8 @@ setup = (options, imports, register) ->
       #  rule - Function handling req, res, next
       #
       registerRule: (rule) ->
-        if not hasSetup
-          rules.push rule
-        else
-          spew.warning "Can't register rule after setup has been called"
+        if not hasSetup then rules.push rule
+        else spew.warning "Can't register rule after setup has been called"
 
       # Register page
       #
@@ -73,7 +70,7 @@ setup = (options, imports, register) ->
                   title: "500"
                   cname: "500"
                   description: "500 Error"
-                  author: "Cris Mihalache"
+                  author: ""
                   error: err.message
                   auth: 0
 
@@ -87,7 +84,7 @@ setup = (options, imports, register) ->
                     title: "500"
                     cname: "500"
                     description: "500 Error"
-                    author: "Cris Mihalache"
+                    author: ""
                     error: err.message
                     auth: 0
                 else res.send html
@@ -147,47 +144,44 @@ setup = (options, imports, register) ->
       # Args
       #  msg  - Server error
       #
-      throw500: (msg) ->
-        throw eInternalError msg
-      getSecret: ->
-        return sessionSecret;
+      throw500: (msg) -> throw eInternalError msg
+      getSecret: -> return sessionSecret
+      httpServer: -> return hServ
+
       server: app,
-      httpServer: ->
-        return hServ
 
       # Initialize last routes
       #
       # Called as part of the init procedure, a call to setup must precede
       initLastRoutes: ->
-        if hasSetup
-
-          # Routes
-          app.get "/500", (req, res) ->
-            throw new eInternalError ""
-          app.get "/*", (req, res) ->
-            throw new NotFound ""
-
-          # Actually start the server
-          if config.secure
-            hServ = https.createServer
-              key: fs.readFileSync config.secure_files.key
-              cert: fs.readFileSync config.secure_files.cert
-            , app
-            spew.init "Starting server with SSL support"
-          else
-            hServ = http.createServer app
-        else
+        if not hasSetup
           spew.error "Can't perform server initialization without setup!"
+          return
+
+        # Routes
+        app.get "/500", (req, res) -> throw new eInternalError ""
+        app.get "/*", (req, res) -> throw new NotFound ""
+
+        # Actually start the server
+        if config.secure
+          hServ = https.createServer
+            key: fs.readFileSync config.secure_files.key
+            cert: fs.readFileSync config.secure_files.cert
+          , app
+          spew.init "Starting server with SSL support"
+        else
+          hServ = http.createServer app
 
       # Start server
       #
       # Called as part of init procedure, a call to setup must precede
       beginListen: ->
 
-        if hasSetup
-          hServ.listen config.port
-          spew.init "Server listening on port " + config.port
-        else
+        if not hasSetup
           spew.error "Can't start listening before setup!"
+          return
+
+        hServ.listen config.port
+        spew.init "Server listening on port " + config.port
 
 module.exports = setup
