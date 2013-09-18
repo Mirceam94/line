@@ -32,8 +32,10 @@ setup = (options, imports, register) ->
     secure_files: null
     port: 0
 
-  lowRuleRegister = (rule) ->
-    app.use (req, res, next) -> rule req, res, next
+  err500path = "500.jade"
+  err404path = "404.jade"
+
+  lowRuleRegister = (rule) -> app.use (req, res, next) -> rule req, res, next
 
   register null,
     "line-express":
@@ -44,8 +46,17 @@ setup = (options, imports, register) ->
       #  rule - Function handling req, res, next
       #
       registerRule: (rule) ->
-        if not hasSetup then rules.push rule
+        if not hasSetup
+          rules.push rule
         else spew.warning "Can't register rule after setup has been called"
+
+      # Set 500 and 404 error view paths
+      # Args:
+      #  500 - path to view for 500 error
+      #  404 - path to view for 404 error
+      setErrorViews: (err500, err404) ->
+        if err500 != undefined then err500path = err500
+        if err404 != undefined then err404path = err404
 
       # Register page
       #
@@ -66,27 +77,14 @@ setup = (options, imports, register) ->
             res.render view, args, (err, html) ->
               if err
                 spew.error err
-                res.status(500).render "500.jade",
-                  title: "500"
-                  cname: "500"
-                  description: "500 Error"
-                  author: ""
-                  error: err.message
-                  auth: 0
-
+                res.status(500).render err500path, { error: err.message }
               else res.send html
           else
             logic (dynamicArgs) ->
               res.render view, dynamicArgs, (err, html) ->
                 if err
                   spew.error err
-                  res.status(500).render "500.jade",
-                    title: "500"
-                    cname: "500"
-                    description: "500 Error"
-                    author: ""
-                    error: err.message
-                    auth: 0
+                  res.status(500).render err500path, { error: err.message }
                 else res.send html
             , req, res
 
@@ -115,8 +113,7 @@ setup = (options, imports, register) ->
 
         app.configure ->
           app.set "views", view_root
-          app.set "view options",
-            layout: false
+          app.set "view options", { layout: false }
           app.use connect.bodyParser()
           app.use express.cookieParser sessionSecret
           app.use express.session sessionSecret
@@ -129,11 +126,11 @@ setup = (options, imports, register) ->
           app.use app.router
           app.use (err, req, res, next) ->
             if err instanceof NotFound
-              spew.warning "Rendering 404 page for " + req.url
-              res.status(404).render "404.jade", {}
+              spew.warning "Rendering 404 page for #{req.url}"
+              res.status(404).render err404path, { path: req.url }
             else if err instanceof eInternalError
-              spew.warning "Rendering 500 page for " + req.url
-              res.status(500).render "500.jade", {}
+              spew.warning "Rendering 500 page for #{req.url}"
+              res.status(500).render err500path, { error: err.message }
 
         hasSetup = true
 
@@ -145,43 +142,38 @@ setup = (options, imports, register) ->
       #  msg  - Server error
       #
       throw500: (msg) -> throw eInternalError msg
-      getSecret: -> return sessionSecret
-      httpServer: -> return hServ
-
+      getSecret: -> return sessionSecret;
       server: app,
+      httpServer: -> return hServ
 
       # Initialize last routes
       #
       # Called as part of the init procedure, a call to setup must precede
       initLastRoutes: ->
-        if not hasSetup
-          spew.error "Can't perform server initialization without setup!"
-          return
+        if hasSetup
 
-        # Routes
-        app.get "/500", (req, res) -> throw new eInternalError ""
-        app.get "/*", (req, res) -> throw new NotFound ""
+          # Routes
+          app.get "/500", (req, res) -> throw new eInternalError ""
+          app.get "/*", (req, res) -> throw new NotFound ""
 
-        # Actually start the server
-        if config.secure
-          hServ = https.createServer
-            key: fs.readFileSync config.secure_files.key
-            cert: fs.readFileSync config.secure_files.cert
-          , app
-          spew.init "Starting server with SSL support"
-        else
-          hServ = http.createServer app
+          # Actually start the server
+          if config.secure
+            hServ = https.createServer
+              key: fs.readFileSync config.secure_files.key
+              cert: fs.readFileSync config.secure_files.cert
+            , app
+            spew.init "Starting server with SSL support"
+          else hServ = http.createServer app
+        else spew.error "Can't perform server initialization without setup!"
 
       # Start server
       #
       # Called as part of init procedure, a call to setup must precede
       beginListen: ->
 
-        if not hasSetup
-          spew.error "Can't start listening before setup!"
-          return
-
-        hServ.listen config.port
-        spew.init "Server listening on port " + config.port
+        if hasSetup
+          hServ.listen config.port
+          spew.init "Server listening on port " + config.port
+        else spew.error "Can't start listening before setup!"
 
 module.exports = setup
