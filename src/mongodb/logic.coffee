@@ -90,7 +90,7 @@ setup = (options, imports, register) ->
           do (m, i) ->
             objects[m].getModel().find queries[i], (err, data) ->
 
-              ret = {}
+              ret = undefined
 
               if err
                 spew.error "DB Error: #{err}"
@@ -98,7 +98,7 @@ setup = (options, imports, register) ->
               else ret = data
 
               # Emulates findOne()
-              if ret
+              if ret != undefined
                 if ret.length == 1 and not wide then ret = ret[0]
 
               fetched[i] = ret #Ensure correct return order
