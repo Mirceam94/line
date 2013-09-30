@@ -142,6 +142,7 @@ setup = (options, imports, register) ->
       #  msg  - Server error
       #
       throw500: (msg) -> throw eInternalError msg
+      throw404: (msg) -> throw NotFound msg
       getSecret: -> return sessionSecret;
       server: app,
       httpServer: -> return hServ
