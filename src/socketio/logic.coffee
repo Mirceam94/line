@@ -57,6 +57,9 @@ setup = (options, imports, register) ->
           spew.init "Started socket io"
 
         ioObject.set "log level", this.logLevel
+        ioObject.enable "browser client minification"
+        ioObject.enable "browser client etag"
+        ioObject.enable "browser client gzip"
 
       addListener: (name, cb) ->
         spew.info "Added socket listener [#{name}]"
