@@ -169,6 +169,7 @@ setup = (options, imports, register) ->
             hServ = https.createServer
               key: fs.readFileSync config.secure_files.key
               cert: cert
+              ca: fs.readFileSync config.secure_files.ca
             , app
             spew.init "Starting server with SSL support"
           else hServ = http.createServer app
