@@ -159,11 +159,16 @@ setup = (options, imports, register) ->
           app.get "/500", (req, res) -> throw new eInternalError ""
           app.get "/*", (req, res) -> throw new NotFound ""
 
+          if config.secure_files.cert instanceof Array
+            cert = []
+            cert.push fs.readFileSync path for path in config.secure_files.cert
+          else cert = fs.readFileSync config.secure_files.cert
+
           # Actually start the server
           if config.secure
             hServ = https.createServer
               key: fs.readFileSync config.secure_files.key
-              cert: fs.readFileSync config.secure_files.cert
+              cert: cert
             , app
             spew.init "Starting server with SSL support"
           else hServ = http.createServer app
